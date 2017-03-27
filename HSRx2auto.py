@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy  as np
 import pandas as pd
+import activeFunction as af
 from sklearn import cross_validation as cv
 import matplotlib.pyplot as plt
 import NMFclass
@@ -38,7 +39,7 @@ I2[I2 == 0] = 0
 
 
 def prediction(U, V):
-    return g.fun(np.dot(U,V))
+    return (np.dot(U,V))
 
 
 def rmse(I, R, U, V):
@@ -77,24 +78,24 @@ test_errors = []
 
 class activationFunction:
     def __init__(self):
-        pass
-    def fun(self, X):
-        return (X)
-    def derivative(self, X):
-        return 1
-    # def fun(self,X):
-    #     return 1.5 * (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
-    # def derivative(self,X):
-    #     temp = 1.5 * (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
-    #     return 1.5*1.5 - temp**2
+        self.alpha = 0.5
+    # def fun(self, X):
+    #     return (X)
+    # def derivative(self, X):
+    #     return 1
+    def fun(self,X):
+        return (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
+    def derivative(self,X):
+        temp = (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
+        return 1- temp**2
 
 
 g = activationFunction()
 
 import time
 
-start_Real = time.time()
 
+start_Real1 = time.time()
 # initialize U and U_
 for i in myrange(1, p, 1):
     U[i] = 3 * np.random.rand(M[i - 1], M[i]) + 10 ** -4
@@ -115,8 +116,8 @@ for i in myrange(1, p - 1, 1):
 for i in myrange(1, q - 1, 1):
     V_[i + 1], V[i] = NMFclass.NMF(V_[i], N[i])
 
-U[p] = U_[p]
-V[q] = V_[q]
+U[p] = copy.deepcopy(U_[p])
+V[q] = copy.deepcopy(V_[q])
 
 mol_U_ = copy.deepcopy(U_)
 mol_U = copy.deepcopy(U)
@@ -128,11 +129,11 @@ den_U = copy.deepcopy(U)
 den_V = copy.deepcopy(V)
 den_V_ = copy.deepcopy(V_)
 
-
+end_End1 = time.time()
 def forward_propagation_U(U, U_):
     for i in myrange(len(U), 1, -1):
         if i == len(U):
-            U_[i] = U[i]
+            U_[i] = copy.deepcopy(U[i])
         else:
             U_[i] = g.fun(np.dot(U[i], U_[i + 1]))
 
@@ -140,7 +141,7 @@ def forward_propagation_U(U, U_):
 def forward_propagation_V(V, V_):
     for i in myrange(len(V), 1, -1):
         if i == len(V):
-            V_[i] = V[i]
+            V_[i] = copy.deepcopy(V[i])
         else:
             V_[i] = g.fun(np.dot(V_[i + 1], V[i]))
 
@@ -165,17 +166,19 @@ def Back_Propagation_V(j ,mol_V_, mol_V, den_V_, den_V, V, U_, V_, R, I):
             mol_V_[i] = np.dot(U_[i].T, R)
             den_V_[i] = np.dot(U_[i].T, np.dot(U_[i], V_[i]) * I)
         else:
-            derivitavieTemp = g.derivative(V_[i - 1])
+            # derivitavieTemp = g.derivative(V_[i - 1])
+            derivitavieTemp = g.derivative(np.dot(V_[i],V[i-1]))
             mol_V_[i] = np.dot(mol_V_[i - 1] * derivitavieTemp, V[i - 1].T)
             den_V_[i] = np.dot(den_V_[i-1] * derivitavieTemp , V[i - 1].T)
 
         if i == j:
             if i == q:
-                mol_V[i] = mol_V_[i]
+                mol_V[i] = copy.deepcopy(mol_V_[i])
                 den_V[i] = den_V_[i] + 10**-9 + lamda*V[i]
                 break
             else:
-                derivitavieTemp = g.derivative(V_[i])
+                # derivitavieTemp = g.derivative(V_[i])
+                derivitavieTemp = g.derivative(np.dot(V_[i+1],V[i]))
                 mol_V[i] = np.dot(V_[i+1].T , mol_V_[i] * derivitavieTemp )
                 den_V[i] = np.dot(V_[i+1].T, den_V_[i] * derivitavieTemp) + 10**-9 + lamda*V[i]
                 break
@@ -199,17 +202,19 @@ def Back_Propagation_U( i  ,mol_U_, mol_U, den_U_, den_U, U, U_, V_, R, I):
             mol_U_[j] = np.dot(R,V_[j].T)
             den_U_[j] = np.dot(np.dot(U_[j],V_[j])*I , V_[j].T)
         else:
-            derivitavieTemp = g.derivative(U_[j - 1])
+            derivitavieTemp = g.derivative(np.dot(U[j-1],U_[j]))
+            # derivitavieTemp = g.derivative(U_[j - 1])
             mol_U_[j] = np.dot(U[j - 1].T, mol_U_[j - 1] * derivitavieTemp)
             den_U_[j] = np.dot(U[j - 1].T ,den_U_[j-1] * derivitavieTemp )
 
         if j == i:
             if j == p:
-                mol_U[j] = mol_U_[j]
+                mol_U[j] = copy.deepcopy(mol_U_[j])
                 den_U[j] = den_U_[j] + 10**-9 + lamda*U[i]
                 break
             else:
-                derivitavieTemp = g.derivative(U_[j])
+                # derivitavieTemp = g.derivative(U_[j])
+                derivitavieTemp = g.derivative(np.dot(U[j],U[j+1]))
                 mol_U[j] = np.dot(mol_U_[j] * derivitavieTemp , U_[j+1].T )
                 den_U[j] = np.dot(den_U_[j] * derivitavieTemp , U_[j+1].T ) + 10**-9 + lamda*U[j]
                 break
@@ -217,10 +222,9 @@ def Back_Propagation_U( i  ,mol_U_, mol_U, den_U_, den_U, U, U_, V_, R, I):
 # factorization
 
 steprecoder = []
-
+start_Real2 = time.time()
 for epoch in xrange(n_epochs):
     step = 0
-    forward_propagation_U(U, U_)
     # updata Vj
     for j in myrange(1, q, 1):
         forward_propagation_V(V, V_)
@@ -228,7 +232,6 @@ for epoch in xrange(n_epochs):
         V[j] = V[j] * ((mol_V[j]/den_V[j])**0.5)
         step = step + (((mol_V[j]/den_V[j])**0.5).mean())
 
-    forward_propagation_V(V, V_)
     # updata Ui
     for i in myrange(p, 1, -1):
         forward_propagation_U(U, U_)
@@ -236,10 +239,8 @@ for epoch in xrange(n_epochs):
         U[i] = U[i] * ((mol_U[i] / den_U[i]) ** 0.5)
         step = step + ((mol_U[i] / den_U[i]) ** 0.5).mean()
 
-    # convergence
-    forward_propagation_U(U, U_)
-    forward_propagation_V(V, V_)
 
+    # convergence
     train_rmse = rmse(I, R, U_[1], V_[1])
     test_rmse = rmse(I2, T, U_[1], V_[1])
     train_errors.append(train_rmse)
@@ -251,10 +252,12 @@ for epoch in xrange(n_epochs):
         derr = np.abs(ferr[epoch] - ferr[epoch - 1])
         if derr < np.finfo(float).eps:
             break
-end_End = time.time()
+end_End2 = time.time()
+
+print("initialization: %f real seconds" % (end_End1 - start_Real1))
+print("Factorization: %f real seconds" % (end_End2 - start_Real2))
 
 
-print("Method 1: %f real seconds" % (end_End - start_Real))
 plt.figure(1)
 plt.plot(range(len(train_errors)), train_errors, marker='o', label='Training Data');
 plt.plot(range(len(test_errors)), test_errors, marker='v', label='Test Data');

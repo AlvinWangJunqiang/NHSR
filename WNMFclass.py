@@ -8,7 +8,7 @@ def WNMF(R,k = 20):
     # paramets
     m,n = R.shape
     lamda = 8
-    n_epochs = 200 # Number of epochs
+    n_epochs = 150 # Number of epochs
     # use stochastic initialization
     P = np.random.rand(m, k) + 10**-4  # Latent user feature matrix
     Q = np.random.rand(k, n) + 10**-4  # Latent movie feature matrix

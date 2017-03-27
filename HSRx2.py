@@ -56,7 +56,7 @@ def prediction(U, V):
 import time
 
 
-
+start_Real1 = time.time()
 # initialize all
 U_ = 3 * np.random.rand(m, k) + 10 ** -4  # Latent user feature matrix
 V_ = 3 * np.random.rand(k, n) + 10 ** -4  # Latent movie feature matrix
@@ -104,7 +104,7 @@ V2,V1 = NMFclass.NMF(V_,n1)
 #     RQT = np.dot(V_, V1.T)
 #     PQQT = np.dot(np.dot(V2, V1), V1.T) + 10 ** -9
 #     V2 = V2 * RQT / PQQT
-
+end_End1 = time.time()
 ferr = np.zeros(n_epochs)
 train_errors = []
 test_errors = []
@@ -128,25 +128,25 @@ class NonlinearFunction:
     # def Derivative(self,X):
     #     return 2*(X)
     # #linear
-    def Fun(self,X):
-        return (X)
-    def Derivative(self,X):
-        return 1
+    # def Fun(self,X):
+    #     return (X)
+    # def Derivative(self,X):
+    #     return 1
     #linear2
     # def Fun(self,X):
     #     return (X*1.5+0.1)
     # def Derivative(self,X):
     #     return 1.5
     # tanh
-    # def Fun(self,X):
-    #     return 1.7 * (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
-    # def Derivative(self,X):
-    #     temp = 1.7 * (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
-    #     return 1.7*1.7 - temp**2
+    def Fun(self,X):
+        return (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
+    def Derivative(self,X):
+        temp = (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
+        return 1- temp**2
 
 steprecoder = []
 FunX2 = NonlinearFunction()
-start_Real = time.time()
+start_Real2 = time.time()
 for epoch in xrange(n_epochs):
     step_temp = 0
 
@@ -154,10 +154,12 @@ for epoch in xrange(n_epochs):
     # updata U_ V_
     U_ = FunX2.Fun(np.dot(U1,U2))
     V_ =  FunX2.Fun(np.dot(V2,V1))
+
     U_V_W = np.dot(U_,V_)*I
     detgV2V1 = FunX2.Derivative(np.dot(V2, V1))
     mol_1 = (np.dot(U_.T,R) * detgV2V1)
     den_1 = (np.dot(U_.T,U_V_W) * detgV2V1)
+
     # updata V1
     mol = np.dot(V2.T,mol_1)
     den = np.dot(V2.T,den_1) + lamda_wnmf * V1 + 10**-9
@@ -222,8 +224,10 @@ for epoch in xrange(n_epochs):
         derr = np.abs(ferr[epoch] - ferr[epoch - 1]) / n
         if derr < np.finfo(float).eps:
             break
-end_End = time.time()
-print("Method 1: %f real seconds" % (end_End - start_Real))
+end_End2 = time.time()
+
+print("initialization: %f real seconds" % (end_End1 - start_Real1))
+print("Factorization: %f real seconds" % (end_End2 - start_Real2))
 
 plt.figure(1)
 plt.plot(range(len(train_errors)), train_errors, marker='o', label='Training Data');

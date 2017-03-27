@@ -5,7 +5,7 @@ def NMF(R,k = 20):
     m,n = R.shape
     P = 3 * np.random.rand(m, k) + 10**-4  # Latent user feature matrix
     Q = 3 * np.random.rand(k, n) + 10**-4  # Latent movie feature matrix
-    n_epochs = 200 # Number of epochs
+    n_epochs = 150 # Number of epochs
     for epoch in xrange(n_epochs):
         # updata Q
         PTR = np.dot(P.T,R)
