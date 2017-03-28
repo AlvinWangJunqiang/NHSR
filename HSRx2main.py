@@ -10,31 +10,12 @@ import copy
 import time
 
 
-class activationFunction:
-    def __init__(self):
-        self.alpha = 0.5
-
-    # def fun(self, x):
-    #     return (x)
-    # def derivative(self, x):
-    #     return 1
-    def fun(self, x):
-        return af.tanh(x)
-
-    def derivative(self, x):
-        return af.dtanh(x)
-
-
-g = activationFunction()
-
 
 def prediction(U, V):
     return (np.dot(U, V))
 
-
 def rmse(I, X, U, V):
     return np.sqrt(np.sum((I * (X - prediction(U, V))) ** 2) / len(X[X > 0]))
-
 
 def myrange(begin, end, step):
     if step == 1:
@@ -42,11 +23,11 @@ def myrange(begin, end, step):
     if step == -1:
         return range(begin, end - 1, step)
 
-
-class HSR(WNMFclass.wnmf, NMFclass.nmf):
-    def __init__(self, n_epochs_wnmf, lamda_wnmf, n_epochs_nmf):
-        NMFclass.nmf.__init__(self, n_epochs_nmf=n_epochs_nmf)
-        WNMFclass.wnmf.__init__(self, n_epochs_wnmf=n_epochs_wnmf, lamda_wnmf=lamda_wnmf)
+class HSR(WNMFclass.wnmf, NMFclass.nmf,af.activationFunction):
+    def __init__(self, n_epochs_wnmf, lamda_wnmf, n_epochs_nmf,beta,gama,type = 'linear'):
+        af.activationFunction.__init__(self , gama ,beta ,type)
+        NMFclass.nmf.__init__(self,beta = beta , gama = gama ,type = type,n_epochs_nmf=n_epochs_nmf)
+        WNMFclass.wnmf.__init__(self,beta = beta , gama = gama,type = 'linear', n_epochs_wnmf=n_epochs_wnmf, lamda_wnmf=lamda_wnmf)
 
     def Loaddata(self):
         header = ['user_id', 'item_id', 'rating', 'timestamp']
@@ -142,14 +123,14 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf):
             if i == len(self.U):
                 self.U_[i] = copy.deepcopy(self.U[i])
             else:
-                self.U_[i] = g.fun(np.dot(self.U[i], self.U_[i + 1]))
+                self.U_[i] = self.fun(np.dot(self.U[i], self.U_[i + 1]))
 
     def Forward_propagation_V(self):
         for i in myrange(self.q, 1, -1):
             if i == len(self.V):
                 self.V_[i] = copy.deepcopy(self.V[i])
             else:
-                self.V_[i] = g.fun(np.dot(self.V_[i + 1], self.V[i]))
+                self.V_[i] = self.fun(np.dot(self.V_[i + 1], self.V[i]))
 
     def Back_Propagation_V(self, j):
 
@@ -158,8 +139,8 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf):
                 self.mol_V_[i] = np.dot(self.U_[i].T, self.X)
                 self.den_V_[i] = np.dot(self.U_[i].T, np.dot(self.U_[i], self.V_[i]) * self.I)
             else:
-                # derivitavieTemp = g.derivative(V_[i - 1])
-                derivitavieTemp = g.derivative(np.dot(self.V_[i], self.V[i - 1]))
+                # derivitavieTemp = self.derivative(V_[i - 1])
+                derivitavieTemp = self.derivative(np.dot(self.V_[i], self.V[i - 1]))
                 self.mol_V_[i] = np.dot(self.mol_V_[i - 1] * derivitavieTemp, self.V[i - 1].T)
                 self.den_V_[i] = np.dot(self.den_V_[i - 1] * derivitavieTemp, self.V[i - 1].T)
 
@@ -169,8 +150,8 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf):
                     self.den_V[i] = self.den_V_[i] + 10 ** -9 + self.lamda * self.V[i]
                     break
                 else:
-                    # derivitavieTemp = g.derivative(V_[i])
-                    derivitavieTemp = g.derivative(np.dot(self.V_[i + 1], self.V[i]))
+                    # derivitavieTemp = self.derivative(V_[i])
+                    derivitavieTemp = self.derivative(np.dot(self.V_[i + 1], self.V[i]))
                     self.mol_V[i] = np.dot(self.V_[i + 1].T, self.mol_V_[i] * derivitavieTemp)
                     self.den_V[i] = np.dot(self.V_[i + 1].T, self.den_V_[i] * derivitavieTemp) + 10 ** -9 + self.lamda * \
                                                                                                             self.V[i]
@@ -186,8 +167,8 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf):
                 self.mol_U_[j] = np.dot(self.X, self.V_[j].T)
                 self.den_U_[j] = np.dot(np.dot(self.U_[j], self.V_[j]) * self.I, self.V_[j].T)
             else:
-                derivitavieTemp = g.derivative(np.dot(self.U[j - 1], self.U_[j]))
-                # derivitavieTemp = g.derivative(U_[j - 1])
+                derivitavieTemp = self.derivative(np.dot(self.U[j - 1], self.U_[j]))
+                # derivitavieTemp = self.derivative(U_[j - 1])
                 self.mol_U_[j] = np.dot(self.U[j - 1].T, self.mol_U_[j - 1] * derivitavieTemp)
                 self.den_U_[j] = np.dot(self.U[j - 1].T, self.den_U_[j - 1] * derivitavieTemp)
 
@@ -197,8 +178,8 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf):
                     self.den_U[j] = self.den_U_[j] + 10 ** -9 + self.lamda * self.U[i]
                     break
                 else:
-                    # derivitavieTemp = g.derivative(U_[j])
-                    derivitavieTemp = g.derivative(np.dot(self.U[j], self.U_[j + 1]))
+                    # derivitavieTemp = self.derivative(U_[j])
+                    derivitavieTemp = self.derivative(np.dot(self.U[j], self.U_[j + 1]))
                     self.mol_U[j] = np.dot(self.mol_U_[j] * derivitavieTemp, self.U_[j + 1].T)
                     self.den_U[j] = np.dot(self.den_U_[j] * derivitavieTemp, self.U_[j + 1].T) + 10 ** -9 + self.lamda * \
                                                                                                             self.U[j]
@@ -233,12 +214,11 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf):
             self.test_errors.append(test_rmse)
             self.ferr[epoch] = train_rmse
             self.steprecoder.append(step / (self.p * self.q))
-            print epoch, "in HSR:test_rmse:", test_rmse, "train_rmse: ", train_rmse
+            print epoch, "in HSR ( M:",str(self.M0)," N:",str(self.N0), self.type," gama:",str(self.gama), " beta:" , str(self.beta) , ") test_rmse:", test_rmse, "train_rmse: ", train_rmse
             if epoch > 1:
                 derr = np.abs(self.ferr[epoch] - self.ferr[epoch - 1])
                 if derr < np.finfo(float).eps:
                     break
-
 
 def Monitor(M, N, lamda, train_errors, test_errors, save=False, show=True):
     plt.figure(1)
@@ -259,9 +239,9 @@ def Monitor(M, N, lamda, train_errors, test_errors, save=False, show=True):
         figurename = " M " + str(M) + " n " + str(N) + " lamda " + str(lamda)
         plt.savefig(figurename)
         plt.close()
-        return train_errors[-1], test_errors[-1]
     if show is True:
         plt.show()
+    return train_errors[-1], test_errors[-1]
 
         # plt.figure(2)
         # plt.plot(range(len(self.steprecoder)), self.steprecoder, marker='o', label='Training Data');
@@ -274,9 +254,8 @@ def Monitor(M, N, lamda, train_errors, test_errors, save=False, show=True):
         # plt.grid()
         # plt.show()
 
-
 def main():
-    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8)
+    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8 , gama= 1 ,beta= 1,type= 'linear')
     mf.Loaddata()
     mf.Setparamets()
     start_Real1 = time.time()
@@ -290,9 +269,8 @@ def main():
     train_error, test_error = Monitor(mf.M0, mf.N0, mf.lamda, mf.train_errors, mf.test_errors)
     return train_error, test_error
 
-
-def test(M, N, lamda, n_epochs, alpha):
-    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8)
+def test(M = [20 ,100], N = [20 , 1000], lamda = 8, n_epochs = 120, alpha = 0.5 , gama = 1 ,beta = 1,type= 'linear'):
+    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8 , gama= gama ,beta= beta,type= type)
     mf.Loaddata()
     mf.Setparamets(M=M, N=N, lamda=lamda, n_epochs=n_epochs, alpha=alpha)
     start_Real1 = time.time()
@@ -303,7 +281,8 @@ def test(M, N, lamda, n_epochs, alpha):
     end_End2 = time.time()
     print("initialization: %f real seconds" % (end_End1 - start_Real1))
     print("Factorization: %f real seconds" % (end_End2 - start_Real2))
-    Monitor(mf.M0, mf.N0, mf.lamda, mf.train_errors, mf.test_errors, show=False, save=True)
+    train_error, test_error = Monitor(mf.M0, mf.N0, mf.lamda, mf.train_errors, mf.test_errors)
+    return train_error, test_error
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,5 @@
 import numpy  as np
-
+import activeFunction as af
 def WNMF(R,k = 20):
     # Index matrix for training data
     I = R.copy()
@@ -29,8 +29,9 @@ def WNMF(R,k = 20):
 
     return P,Q
 
-class wnmf():
-    def __init__(self,n_epochs_wnmf = 150,lamda_wnmf = 8 ):
+class wnmf(af.activationFunction):
+    def __init__(self,n_epochs_wnmf = 150,lamda_wnmf = 8 ,gama =1, beta =1 , type = 'linear' ):
+        af.activationFunction.__init__(self, gama, beta, type)
         self.n_epochs_wnmf = n_epochs_wnmf
         self.lamda_wnmf = lamda_wnmf
     def WNMF(self,R , k):
