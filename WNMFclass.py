@@ -30,8 +30,7 @@ def WNMF(R,k = 20):
     return P,Q
 
 class wnmf(af.activationFunction):
-    def __init__(self,n_epochs_wnmf = 150,lamda_wnmf = 8 ,gama =1, beta =1 , type = 'linear' ):
-        af.activationFunction.__init__(self, gama, beta, type)
+    def __init__(self,n_epochs_wnmf = 150,lamda_wnmf = 8 ):
         self.n_epochs_wnmf = n_epochs_wnmf
         self.lamda_wnmf = lamda_wnmf
     def WNMF(self,R , k):
@@ -44,8 +43,8 @@ class wnmf(af.activationFunction):
         m, n = R.shape
 
         # use stochastic initialization
-        P = np.random.rand(m, k) + 10 ** -4  # Latent user feature matrix
-        Q = np.random.rand(k, n) + 10 ** -4  # Latent movie feature matrix
+        P = np.random.rand(m, k)/np.sqrt(m*k) + 10 ** -9  # Latent user feature matrix
+        Q = np.random.rand(k, n)/np.sqrt(n*k) + 10 ** -9  # Latent movie feature matrix
 
         # factorazation
         for epoch in xrange(self.n_epochs_wnmf):

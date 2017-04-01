@@ -22,7 +22,7 @@ def dsigmoid(x):
     return ( 1 - sigmoid(x))*sigmoid(x)
 
 class activationFunction:
-    def __init__(self,gama ,beta ,type = 'linear' ):
+    def __init__(self,gama ,beta ,type ):
         self.gama = gama
         self.beta = beta
         self.type = type

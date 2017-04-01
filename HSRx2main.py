@@ -1,21 +1,26 @@
 # -*- coding: utf-8 -*-
 import numpy  as np
 import pandas as pd
-import activeFunction as af
 from sklearn import cross_validation as cv
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import NMFclass
-import WNMFclass
 import copy
 import time
+
+import activeFunction as af
+import NMFclass
+import WNMFclass
 
 
 
 def prediction(U, V):
     return (np.dot(U, V))
 
+
 def rmse(I, X, U, V):
-    return np.sqrt(np.sum((I * (X - prediction(U, V))) ** 2) / len(X[X > 0]))
+    return np.sqrt(np.sum((I * (X - prediction(U, V))  ) ** 2) / len(X[X > 0]))
+
 
 def myrange(begin, end, step):
     if step == 1:
@@ -23,20 +28,21 @@ def myrange(begin, end, step):
     if step == -1:
         return range(begin, end - 1, step)
 
-class HSR(WNMFclass.wnmf, NMFclass.nmf,af.activationFunction):
-    def __init__(self, n_epochs_wnmf, lamda_wnmf, n_epochs_nmf,beta,gama,type = 'linear'):
-        af.activationFunction.__init__(self , gama ,beta ,type)
-        NMFclass.nmf.__init__(self,beta = beta , gama = gama ,type = type,n_epochs_nmf=n_epochs_nmf)
-        WNMFclass.wnmf.__init__(self,beta = beta , gama = gama,type = 'linear', n_epochs_wnmf=n_epochs_wnmf, lamda_wnmf=lamda_wnmf)
 
-    def Loaddata(self):
+class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
+    def __init__(self, n_epochs_wnmf, lamda_wnmf, n_epochs_nmf, beta, gama, type):
+        af.activationFunction.__init__(self, gama, beta, type)
+        NMFclass.nmf.__init__(self, beta=beta, gama=gama, type=type, n_epochs_nmf=n_epochs_nmf)
+        WNMFclass.wnmf.__init__(self, n_epochs_wnmf=n_epochs_wnmf,lamda_wnmf=lamda_wnmf)
+
+    def Loaddata(self,test_size=0.4):
         header = ['user_id', 'item_id', 'rating', 'timestamp']
         df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
         n_users = df.user_id.unique().shape[0]
         n_items = df.item_id.unique().shape[0]
         print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
 
-        train_data, test_data = cv.train_test_split(df, test_size=0.4)
+        train_data, test_data = cv.train_test_split(df, test_size=test_size)
         train_data = pd.DataFrame(train_data)
         test_data = pd.DataFrame(test_data)
 
@@ -48,6 +54,10 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf,af.activationFunction):
         self.T = np.zeros((n_users, n_items))
         for line in test_data.itertuples():
             self.T[line[1] - 1, line[2] - 1] = line[3]
+
+        #normalization
+        # self.X = (self.X - self.X.min())/(self.X.max() - self.X.min())
+        # self.T = (self.T - self.T.min()) / (self.T.max() - self.T.min())
 
         # Index matrix for training data
         self.I = self.X.copy()
@@ -79,6 +89,8 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf,af.activationFunction):
         self.lamda = lamda
         self.p = len(self.M) - 1
         self.q = len(self.N) - 1
+        self.name = "n_epochs " + str(self.n_epochs) + " M " + str(self.M0) +  " N " + str(self.N0) +" " +self.type +  " gama " + str(
+                self.gama) +  " beta " +  str(self.beta) +  " lamda " + str(self.lamda) + " lamda_wnmf " + str(self.lamda_wnmf)
 
     def Initialization(self):
         self.U = {}
@@ -87,13 +99,13 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf,af.activationFunction):
         self.U_ = {}
         # initialize U and U_
         for i in myrange(1, self.p, 1):
-            self.U[i] = 3 * np.random.rand(self.M[i - 1], self.M[i]) + 10 ** -4
-            self.U_[i] = 3 * np.random.rand(self.M[i - 1], self.d) + 10 ** -4
+            self.U[i] = np.random.rand(self.M[i - 1], self.M[i]) / np.sqrt(self.M[i - 1] * self.M[i]) + 10 ** -9
+            self.U_[i] = np.random.rand(self.M[i - 1], self.d) / np.sqrt(self.M[i - 1] * self.d) + 10 ** -9
 
         # initialize U and U_
         for i in myrange(1, self.q, 1):
-            self.V[i] = 3 * np.random.rand(self.N[i], self.N[i - 1]) + 10 ** -4
-            self.U_[i] = 3 * np.random.rand(self.d, self.N[i - 1]) + 10 ** -4
+            self.V[i] = 3 * np.random.rand(self.N[i], self.N[i - 1]) / np.sqrt(self.N[i] * self.N[i - 1]) + 10 ** -9
+            self.V_[i] = 3 * np.random.rand(self.d, self.N[i - 1]) / np.sqrt(self.d * self.N[i - 1]) + 10 ** -9
 
         # #WNMF
         self.U_[1], self.V_[1] = self.WNMF(self.X, self.d)
@@ -214,50 +226,52 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf,af.activationFunction):
             self.test_errors.append(test_rmse)
             self.ferr[epoch] = train_rmse
             self.steprecoder.append(step / (self.p * self.q))
-            print epoch, "in HSR ( M:",str(self.M0)," N:",str(self.N0), self.type," gama:",str(self.gama), " beta:" , str(self.beta) , ") test_rmse:", test_rmse, "train_rmse: ", train_rmse
+            if epoch == 110:
+                pass
+            print epoch, "in HSR (",self.name,") test_rmse:", test_rmse, "train_rmse: ", train_rmse
             if epoch > 1:
                 derr = np.abs(self.ferr[epoch] - self.ferr[epoch - 1])
                 if derr < np.finfo(float).eps:
                     break
 
-def Monitor(M, N, lamda, train_errors, test_errors, save=False, show=True):
-    plt.figure(1)
-    plt.plot(range(len(train_errors)), train_errors, marker='o', label='Training Data');
-    plt.plot(range(len(test_errors)), test_errors, marker='v', label='Test Data');
-    plt.text(len(train_errors) - 1, train_errors[-1], str(train_errors[-1]), horizontalalignment='center',
-             verticalalignment='top')
-    plt.text(len(train_errors) - 1, test_errors[-1], str(test_errors[-1]), horizontalalignment='center',
-             verticalalignment='top')
+    def Monitor(self,save=True, show=True):
+        plt.figure(1)
+        plt.plot(range(len(self.train_errors)), self.train_errors, marker='o', label='Training Data');
+        plt.plot(range(len(self.test_errors)), self.test_errors, marker='v', label='Test Data');
+        plt.text(len(self.train_errors) - 1, self.train_errors[-1], str(self.train_errors[-1]), horizontalalignment='center',
+                 verticalalignment='top')
+        plt.text(len(self.train_errors) - 1, self.test_errors[-1], str(self.test_errors[-1]), horizontalalignment='center',
+                 verticalalignment='top')
 
-    plt.title('HSR Learning Curve and K = 20')
-    plt.xlabel('Number of Epochs');
-    plt.ylabel('RMSE');
-    plt.legend()
-    plt.grid()
+        plt.title(self.name)
+        plt.xlabel('Number of Epochs');
+        plt.ylabel('RMSE');
+        plt.legend()
+        plt.grid()
 
-    if save is True:
-        figurename = " M " + str(M) + " n " + str(N) + " lamda " + str(lamda)
-        plt.savefig(figurename)
-        plt.close()
-    if show is True:
-        plt.show()
-    return train_errors[-1], test_errors[-1]
+        if save is True:
+            figurename = self.name
+            plt.savefig(figurename)
+            plt.close()
+        if show is True:
+            plt.show()
+        return self.train_errors[-1], self.test_errors[-1]
 
-        # plt.figure(2)
-        # plt.plot(range(len(self.steprecoder)), self.steprecoder, marker='o', label='Training Data');
-        # plt.text(len(self.steprecoder) - 1, self.steprecoder[-1], str(self.steprecoder[-1]), horizontalalignment='center',
-        #          verticalalignment='top')
-        # plt.title('Step Curve and K = 20')
-        # plt.xlabel('Number of Epochs');
-        # plt.ylabel('Step');
-        # plt.legend()
-        # plt.grid()
-        # plt.show()
+    # plt.figure(2)
+    # plt.plot(range(len(self.steprecoder)), self.steprecoder, marker='o', label='Training Data');
+    # plt.text(len(self.steprecoder) - 1, self.steprecoder[-1], str(self.steprecoder[-1]), horizontalalignment='center',
+    #          verticalalignment='top')
+    # plt.title('Step Curve and K = 20')
+    # plt.xlabel('Number of Epochs');
+    # plt.ylabel('Step');
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
 
-def main():
-    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8 , gama= 1 ,beta= 1,type= 'linear')
+def main(M, N, n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf = 8, gama=1, beta=10, type='linear',n_epochs = 150 , lamda= 8 ,alpha = 0.5 ):
+    mf = HSR(n_epochs_nmf =n_epochs_nmf, n_epochs_wnmf =n_epochs_wnmf, lamda_wnmf =lamda_wnmf , gama = gama, beta =beta, type= type)
     mf.Loaddata()
-    mf.Setparamets()
+    mf.Setparamets(M=M, N=N,n_epochs = n_epochs , lamda = lamda ,alpha  = alpha)
     start_Real1 = time.time()
     mf.Initialization()
     end_End1 = time.time()
@@ -266,11 +280,11 @@ def main():
     end_End2 = time.time()
     print("initialization: %f real seconds" % (end_End1 - start_Real1))
     print("Factorization: %f real seconds" % (end_End2 - start_Real2))
-    train_error, test_error = Monitor(mf.M0, mf.N0, mf.lamda, mf.train_errors, mf.test_errors)
+    train_error, test_error = mf.Monitor()
     return train_error, test_error
 
-def test(M = [20 ,100], N = [20 , 1000], lamda = 8, n_epochs = 120, alpha = 0.5 , gama = 1 ,beta = 1,type= 'linear'):
-    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8 , gama= gama ,beta= beta,type= type)
+def test(M=[20, 100 ,50], N=[20, 1000,500], lamda=8, n_epochs=120, alpha=0.5, gama=1, beta=1, type='sigmoid'):
+    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=gama, beta=beta, type=type)
     mf.Loaddata()
     mf.Setparamets(M=M, N=N, lamda=lamda, n_epochs=n_epochs, alpha=alpha)
     start_Real1 = time.time()
@@ -281,8 +295,14 @@ def test(M = [20 ,100], N = [20 , 1000], lamda = 8, n_epochs = 120, alpha = 0.5 
     end_End2 = time.time()
     print("initialization: %f real seconds" % (end_End1 - start_Real1))
     print("Factorization: %f real seconds" % (end_End2 - start_Real2))
-    train_error, test_error = Monitor(mf.M0, mf.N0, mf.lamda, mf.train_errors, mf.test_errors)
+    train_error, test_error = mf.Monitor()
     return train_error, test_error
 
 if __name__ == '__main__':
-    main()
+    # 线性最好的 0.933818567767
+    # main(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear', n_epochs=100, lamda=10)
+    # 非线性最好的 0.924
+    # main(M=[20, 100 ], N=[20, 1000],n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=18, gama=1, beta=10, type='tanh', n_epochs=100, lamda=15 ,alpha = 0.5)
+    #基础版的效果示意
+    main(M=[20], N=[20], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear',
+    n_epochs=100, lamda=8, alpha=0.5)

@@ -53,8 +53,8 @@ lamda_wnmf = 8
 n_epochs = 100
 
 # each layer parameter
-M = (m,100,d)
-N = (n,1000,d)
+M = (m,d)
+N = (n,d)
 lamda = 8
 
 # initialize all

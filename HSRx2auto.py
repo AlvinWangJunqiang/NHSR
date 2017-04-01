@@ -19,16 +19,16 @@ train_data = pd.DataFrame(train_data)
 test_data = pd.DataFrame(test_data)
 
 # Create training and test matrix
-R = np.zeros((n_users, n_items))
+X = np.zeros((n_users, n_items))
 for line in train_data.itertuples():
-    R[line[1] - 1, line[2] - 1] = line[3]
+    X[line[1] - 1, line[2] - 1] = line[3]
 
 T = np.zeros((n_users, n_items))
 for line in test_data.itertuples():
     T[line[1] - 1, line[2] - 1] = line[3]
 
 # Index matrix for training data
-I = R.copy()
+I = X.copy()
 I[I > 0] = 1
 I[I == 0] = 0
 
@@ -42,8 +42,8 @@ def prediction(U, V):
     return (np.dot(U,V))
 
 
-def rmse(I, R, U, V):
-    return np.sqrt(np.sum((I * (R - prediction(U, V))) ** 2) / len(R[R > 0]))
+def rmse(I, X, U, V):
+    return np.sqrt(np.sum((I * (X - prediction(U, V))) ** 2) / len(X[X > 0]))
 
 
 def myrange(begin, end, step):
@@ -55,9 +55,9 @@ def myrange(begin, end, step):
 
 # paramets
 d = 20
-m, n = R.shape
+m, n = X.shape
 n_epochs = 150
-
+alpha = 0.5
 # each layer parameter
 M = (m, 100,d)
 N = (n,1000,d)
@@ -79,15 +79,14 @@ test_errors = []
 class activationFunction:
     def __init__(self):
         self.alpha = 0.5
-    # def fun(self, X):
-    #     return (X)
-    # def derivative(self, X):
-    #     return 1
-    def fun(self,X):
-        return (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
-    def derivative(self,X):
-        temp = (np.exp(X) - np.exp(-X))/(np.exp(X) + np.exp(-X))
-        return 1- temp**2
+    def fun(self, X):
+        return (X)
+    def derivative(self, X):
+        return 1
+    # def fun(self,x):
+    #     return af.tanh(x)
+    # def derivative(self,x):
+    #     return af.dtanh(x)
 
 
 g = activationFunction()
@@ -107,7 +106,7 @@ for i in myrange(1, q, 1):
     U_[i] = 3 * np.random.rand(d, N[i - 1]) + 10 ** -4
 
 # #WNMF
-U_[1], V_[1] = WNMFclass.WNMF(R, d)
+U_[1], V_[1] = WNMFclass.WNMF(X, d)
 
 # NMF for U and V
 for i in myrange(1, p - 1, 1):
@@ -146,7 +145,7 @@ def forward_propagation_V(V, V_):
             V_[i] = g.fun(np.dot(V_[i + 1], V[i]))
 
 
-def Back_Propagation_V(j ,mol_V_, mol_V, den_V_, den_V, V, U_, V_, R, I):
+def Back_Propagation_V(j ,mol_V_, mol_V, den_V_, den_V, V, U_, V_, X, I):
     """
 
     :param j: 当前更新值
@@ -163,7 +162,7 @@ def Back_Propagation_V(j ,mol_V_, mol_V, den_V_, den_V, V, U_, V_, R, I):
     """
     for i in myrange(1, q, 1):
         if i == 1:
-            mol_V_[i] = np.dot(U_[i].T, R)
+            mol_V_[i] = np.dot(U_[i].T, X)
             den_V_[i] = np.dot(U_[i].T, np.dot(U_[i], V_[i]) * I)
         else:
             # derivitavieTemp = g.derivative(V_[i - 1])
@@ -183,7 +182,7 @@ def Back_Propagation_V(j ,mol_V_, mol_V, den_V_, den_V, V, U_, V_, R, I):
                 den_V[i] = np.dot(V_[i+1].T, den_V_[i] * derivitavieTemp) + 10**-9 + lamda*V[i]
                 break
 
-def Back_Propagation_U( i  ,mol_U_, mol_U, den_U_, den_U, U, U_, V_, R, I):
+def Back_Propagation_U( i  ,mol_U_, mol_U, den_U_, den_U, U, U_, V_, X, I):
     """
     :param i: 当前更新值
     :param mol_U_:
@@ -193,13 +192,13 @@ def Back_Propagation_U( i  ,mol_U_, mol_U, den_U_, den_U, U, U_, V_, R, I):
     :param U:
     :param U_:
     :param V_:
-    :param R:
+    :param X:
     :param I:
     :return:
     """
     for j in myrange(1, p, 1):
         if j == 1:
-            mol_U_[j] = np.dot(R,V_[j].T)
+            mol_U_[j] = np.dot(X,V_[j].T)
             den_U_[j] = np.dot(np.dot(U_[j],V_[j])*I , V_[j].T)
         else:
             derivitavieTemp = g.derivative(np.dot(U[j-1],U_[j]))
@@ -214,7 +213,7 @@ def Back_Propagation_U( i  ,mol_U_, mol_U, den_U_, den_U, U, U_, V_, R, I):
                 break
             else:
                 # derivitavieTemp = g.derivative(U_[j])
-                derivitavieTemp = g.derivative(np.dot(U[j],U[j+1]))
+                derivitavieTemp = g.derivative(np.dot(U[j],U_[j+1]))
                 mol_U[j] = np.dot(mol_U_[j] * derivitavieTemp , U_[j+1].T )
                 den_U[j] = np.dot(den_U_[j] * derivitavieTemp , U_[j+1].T ) + 10**-9 + lamda*U[j]
                 break
@@ -228,20 +227,20 @@ for epoch in xrange(n_epochs):
     # updata Vj
     for j in myrange(1, q, 1):
         forward_propagation_V(V, V_)
-        Back_Propagation_V(j, mol_V_, mol_V, den_V_, den_V, V, U_, V_, R, I)
-        V[j] = V[j] * ((mol_V[j]/den_V[j])**0.5)
-        step = step + (((mol_V[j]/den_V[j])**0.5).mean())
+        Back_Propagation_V(j, mol_V_, mol_V, den_V_, den_V, V, U_, V_, X, I)
+        V[j] = V[j] * ((mol_V[j]/den_V[j])**alpha)
+        step = step + (((mol_V[j]/den_V[j])**alpha).mean())
 
     # updata Ui
     for i in myrange(p, 1, -1):
         forward_propagation_U(U, U_)
-        Back_Propagation_U(i, mol_U_, mol_U, den_U_, den_U, U, U_, V_, R, I)
-        U[i] = U[i] * ((mol_U[i] / den_U[i]) ** 0.5)
-        step = step + ((mol_U[i] / den_U[i]) ** 0.5).mean()
+        Back_Propagation_U(i, mol_U_, mol_U, den_U_, den_U, U, U_, V_, X, I)
+        U[i] = U[i] * ((mol_U[i] / den_U[i]) ** alpha)
+        step = step + ((mol_U[i] / den_U[i]) ** alpha).mean()
 
 
     # convergence
-    train_rmse = rmse(I, R, U_[1], V_[1])
+    train_rmse = rmse(I, X, U_[1], V_[1])
     test_rmse = rmse(I2, T, U_[1], V_[1])
     train_errors.append(train_rmse)
     test_errors.append(test_rmse)
