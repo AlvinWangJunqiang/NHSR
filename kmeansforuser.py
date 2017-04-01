@@ -95,7 +95,7 @@ for line in df.itertuples():
 
 # 基本的矩阵分解提取特征,一层，分解数为20
 mfOneLayer = HSRx2main.HSR(n_epochs_nmf=100, n_epochs_wnmf=100, lamda_wnmf=0, gama=1, beta=1, type='linear')
-mfOneLayer.Loaddata(test_size=0.01)
+mfOneLayer.Loaddata(test_size=0.001)
 mfOneLayer.Setparamets(M=[20], N=[20], lamda=0, n_epochs=100, alpha=0.5)
 mfOneLayer.Initialization()
 mfOneLayer.Factorization()
@@ -104,7 +104,7 @@ trainOneLayer, testOneLayer = mfOneLayer.Monitor(save = False ,show = False)
 
 # 深度矩阵分解提取特征,两层，分解数为
 mfTwoLayer = HSRx2main.HSR(n_epochs_nmf=100, n_epochs_wnmf=100, lamda_wnmf=0, gama=1, beta=1, type='linear')
-mfTwoLayer.Loaddata(test_size=0.01)
+mfTwoLayer.Loaddata(test_size=0.001)
 mfTwoLayer.Setparamets(M=[20,100], N=[20,1000], lamda=0, n_epochs=100, alpha=0.5)
 mfTwoLayer.Initialization()
 mfTwoLayer.Factorization()

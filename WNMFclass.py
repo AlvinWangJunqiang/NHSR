@@ -1,6 +1,6 @@
 import numpy  as np
 import activeFunction as af
-def WNMF(R,k = 20):
+def WNMF(R,k = 20,lamda = 8):
     # Index matrix for training data
     I = R.copy()
     I[I > 0] = 1
@@ -8,11 +8,10 @@ def WNMF(R,k = 20):
 
     # paramets
     m,n = R.shape
-    lamda = 8
     n_epochs = 150 # Number of epochs
     # use stochastic initialization
-    P = np.random.rand(m, k) + 10**-4  # Latent user feature matrix
-    Q = np.random.rand(k, n) + 10**-4  # Latent movie feature matrix
+    P = np.random.rand(m, k) / np.sqrt(m * k) + 10 ** -9  # Latent user feature matrix
+    Q = np.random.rand(k, n) / np.sqrt(n * k) + 10 ** -9  # Latent movie feature matrix
 
     # factorazation
     for epoch in xrange(n_epochs):
@@ -25,8 +24,6 @@ def WNMF(R,k = 20):
         RQT = np.dot(I*R,Q.T)
         WPQQT = np.dot(I*np.dot(P,Q),Q.T) + lamda * P + 10**-9
         P = P * (RQT/WPQQT)
-
-
     return P,Q
 
 class wnmf(af.activationFunction):
