@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 def rmse(I,R,Q,P):
     return np.sqrt(np.sum((I * (R - np.dot(P.T,Q)))**2)/len(R[R > 0]))
 
-
-
-
-
 def ALS_WR():
     header = ['user_id', 'item_id', 'rating', 'timestamp']
     df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
@@ -68,22 +64,10 @@ def ALS_WR():
 
         train_rmse = rmse(I, R, Q, P)
         train_errors.append(train_rmse)
-
+        print "[Epoch %d/%d] train error: %f" \
+              % (epoch + 1, n_epochs, train_rmse)
     print "Algorithm converged"
-
-    # Check performance by plotting train and test errors
-
-    plt.plot(range(n_epochs), train_errors, marker='o', label='Training Data');
-    plt.title('ALS-WR Learning Curve')
-    plt.xlabel('Number of Epochs');
-    plt.ylabel('RMSE');
-    plt.legend()
-    plt.grid()
-    plt.show()
-
-
-
-
+    return P,Q
 
 if __name__ == '__main__':
     header = ['user_id', 'item_id', 'rating', 'timestamp']
@@ -153,7 +137,8 @@ if __name__ == '__main__':
             Aj = np.dot(P, np.dot(np.diag(Ij), P.T)) + lmbda * nmj * E
             Vj = np.dot(P, np.dot(np.diag(Ij), R[:, j]))
             Q[:, j] = np.linalg.solve(Aj, Vj)
-
+        print "[Epoch %d/%d] train error: %f, test error: %f" \
+              % (epoch + 1, n_epochs, train_rmse, test_rmse)
         train_rmse = rmse(I, R, Q, P)
         test_rmse = rmse(I2, T, Q, P)
         train_errors.append(train_rmse)

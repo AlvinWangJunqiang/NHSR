@@ -289,12 +289,6 @@ class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
         for line in train_data.itertuples():
             self.X[line[1] - 1, line[2] - 1] = line[3]
 
-
-
-        #normalization
-        # self.X = (self.X - self.X.min())/(self.X.max() - self.X.min())
-        # self.T = (self.T - self.T.min()) / (self.T.max() - self.T.min())
-
         # Index matrix for training data
         self.I = self.X.copy()
         self.I[self.I > 0] = 1
