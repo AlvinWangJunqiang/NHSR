@@ -54,12 +54,12 @@ for line in cf.itertuples():
     R[user[line[1]], movie[line[2]]] = line[3]
     end = time.time()
     i = i +1
-    if i//10000 == 0:
-        print ("当前循环时间为 %f 已经循环了百分之： %f" %((end - begin),i/20000263.0*100 ))
+    if i % 100000 ==0:
+        print ("i =  %d" % i )
 
 
 endall = time.time()
-print endall - beginall
+print (endall - beginall)/60
 U, V_WNMF = WNMFclass.WNMF(R, k=20, lamda=0)
 y_pred , cluster_centers_ = Kmeans(V_WNMF.T,10)
 
