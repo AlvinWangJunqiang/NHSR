@@ -57,7 +57,7 @@ for line in cf.itertuples():
     if i % 100000 ==0:
         print ("i =  %d" % i )
 
-
+np.save("ml-20m.npy",R)
 endall = time.time()
 print (endall - beginall)/60
 U, V_WNMF = WNMFclass.WNMF(R, k=20, lamda=0)
