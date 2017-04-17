@@ -12,22 +12,17 @@ import activeFunction as af
 import NMFclass
 import WNMFclass
 
-
-
 def prediction(U, V):
     return (np.dot(U, V))
 
-
 def rmse(I, X, U, V):
     return np.sqrt(np.sum((I * (X - prediction(U, V))  ) ** 2) / len(X[X > 0]))
-
 
 def myrange(begin, end, step):
     if step == 1:
         return range(begin, end + 1, step)
     if step == -1:
         return range(begin, end - 1, step)
-
 
 class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
     def __init__(self, n_epochs_wnmf, lamda_wnmf, n_epochs_nmf, beta, gama, type):
@@ -36,25 +31,41 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
         WNMFclass.wnmf.__init__(self, n_epochs_wnmf=n_epochs_wnmf,lamda_wnmf=lamda_wnmf)
 
     def Loaddata(self,test_size=0.4):
-        header = ['user_id', 'item_id', 'rating', 'timestamp']
-        df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
+        #使用豆瓣数据集
+        header = ['movie_id', 'movie_name','user_id','user_name', 'rating', 'tag']
+        df = pd.read_csv('./Douban/Bigcommentprocess.csv', sep=',', names=header)
         n_users = df.user_id.unique().shape[0]
-        n_items = df.item_id.unique().shape[0]
+        n_items = df.movie_id.unique().shape[0]
+
+        #使用movielens数据集
+        # header = ['user_id', 'item_id', 'rating', 'timestamp']
+        # df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
+        # n_users = df.user_id.unique().shape[0]
+        # n_items = df.item_id.unique().shape[0]
         print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
 
         train_data, test_data = cv.train_test_split(df, test_size=test_size)
         train_data = pd.DataFrame(train_data)
         test_data = pd.DataFrame(test_data)
 
+        # 使用moviel_lens数据集
+        # # Create training and test matrix
+        # self.X = np.zeros((n_users, n_items))
+        # for line in train_data.itertuples():
+        #     self.X[line[1] - 1, line[2] - 1] = line[3]
+        #
+        # self.T = np.zeros((n_users, n_items))
+        # for line in test_data.itertuples():
+        #     self.T[line[1] - 1, line[2] - 1] = line[3]
+
+        # 使用豆瓣数据集
         # Create training and test matrix
         self.X = np.zeros((n_users, n_items))
         for line in train_data.itertuples():
-            self.X[line[1] - 1, line[2] - 1] = line[3]
-
+            self.X[line[3] - 1, line[1] - 1] = line[5]/10
         self.T = np.zeros((n_users, n_items))
         for line in test_data.itertuples():
-            self.T[line[1] - 1, line[2] - 1] = line[3]
-
+            self.T[line[3] - 1, line[1] - 1] = line[5]/10
         #normalization
         # self.X = (self.X - self.X.min())/(self.X.max() - self.X.min())
         # self.T = (self.T - self.T.min()) / (self.T.max() - self.T.min())
@@ -257,16 +268,6 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
             plt.show()
         return self.train_errors[-1], self.test_errors[-1]
 
-    # plt.figure(2)
-    # plt.plot(range(len(self.steprecoder)), self.steprecoder, marker='o', label='Training Data');
-    # plt.text(len(self.steprecoder) - 1, self.steprecoder[-1], str(self.steprecoder[-1]), horizontalalignment='center',
-    #          verticalalignment='top')
-    # plt.title('Step Curve and K = 20')
-    # plt.xlabel('Number of Epochs');
-    # plt.ylabel('Step');
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
 
 class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
     def __init__(self, n_epochs_wnmf, lamda_wnmf, n_epochs_nmf, beta, gama, type):
@@ -275,6 +276,7 @@ class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
         WNMFclass.wnmf.__init__(self, n_epochs_wnmf=n_epochs_wnmf,lamda_wnmf=lamda_wnmf)
 
     def Loaddata(self,test_size=0.4):
+
         header = ['user_id', 'item_id', 'rating', 'timestamp']
         df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
         n_users = df.user_id.unique().shape[0]
@@ -521,10 +523,15 @@ def test(M=[20, 100 ,50], N=[20, 1000,500], lamda=8, n_epochs=120, alpha=0.5, ga
     return train_error, test_error
 
 if __name__ == '__main__':
+    # movielens数据集调整参数
     # 线性最好的 0.933818567767
     # main(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear', n_epochs=100, lamda=10)
     # 非线性最好的 0.924
     # main(M=[20, 100 ], N=[20, 1000],n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=18, gama=1, beta=10, type='tanh', n_epochs=100, lamda=15 ,alpha = 0.5)
     #基础版的效果示意
-    main(M=[20], N=[20], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear',
-    n_epochs=100, lamda=8, alpha=0.5)
+    # main(M=[20,100], N=[20,1000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear',
+    # n_epochs=100, lamda=8, alpha=0.5)
+
+    # 豆瓣数据集调整参数
+    main(M=[20, 1000], N=[20, 1000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear',
+         n_epochs=100, lamda=8, alpha=0.5)

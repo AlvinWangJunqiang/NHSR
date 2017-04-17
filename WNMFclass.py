@@ -54,7 +54,6 @@ class wnmf(af.activationFunction):
             RQT = np.dot(I * R, Q.T)
             WPQQT = np.dot(I * np.dot(P, Q), Q.T) + self.lamda_wnmf * P + 10 ** -9
             P = P * (RQT / WPQQT)
-            print("WNMF in %d / %d iteration" %(epochs,self.n_epochs_wnmf))
         return P, Q
 
 

@@ -51,7 +51,6 @@ class nmf(af.activationFunction):
             train_rmse = np.sqrt(np.sum(((R - self.fun(np.dot(P, Q)))) ** 2) / len(R[R > 0]))
             train_errors.append(train_rmse)
             R_pre = self.fun(np.dot(P,Q))
-        # return P, Q , R_pre , train_errors
         return P, Q
 
 if __name__ == '__main__':

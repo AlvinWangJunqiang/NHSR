@@ -28,38 +28,38 @@ def Kmeans(U,n_clusters):
 
 
 
-rnames = ['user_id', 'movie_id', 'rating', 'timestamp']
-cf = pd.read_table('./ml-20m/ml-20m/ratings.csv', sep=',', names=rnames,skiprows = 1)
-
-n_users = cf.user_id.unique().shape[0]
-n_items = cf.movie_id.unique().shape[0]
-# Create training matrix
-R = np.zeros((n_users, n_items))
-
-num_movie = 0
-num_user = 0
-movie = {}
-user = {}
-i = 0
-beginall = time.time()
-for line in cf.itertuples():
-    begin = time.time()
-    # if not (movie_id in movie.keys()):
-    if not (movie.has_key(line[2])):
-        movie.update({line[2] :num_movie})
-        num_movie = num_movie + 1
-    if not (user.has_key(line[1])):
-        user.update({line[1]:num_user})
-        num_user = num_user + 1
-    R[user[line[1]], movie[line[2]]] = line[3]
-    end = time.time()
-    i = i +1
-    if i % 100000 ==0:
-        print ("i =  %d" % i )
-
-np.save("ml-20m.npy",R)
+# rnames = ['user_id', 'movie_id', 'rating', 'timestamp']
+# cf = pd.read_table('./ml-20m/ml-20m/ratings.csv', sep=',', names=rnames,skiprows = 1)
+#
+# n_users = cf.user_id.unique().shape[0]
+# n_items = cf.movie_id.unique().shape[0]
+# # Create training matrix
+# R = np.zeros((n_users, n_items))
+#
+# num_movie = 0
+# num_user = 0
+# movie = {}
+# user = {}
+# i = 0
+# beginall = time.time()
+# for line in cf.itertuples():
+#     begin = time.time()
+#     # if not (movie_id in movie.keys()):
+#     if not (movie.has_key(line[2])):
+#         movie.update({line[2] :num_movie})
+#         num_movie = num_movie + 1
+#     if not (user.has_key(line[1])):
+#         user.update({line[1]:num_user})
+#         num_user = num_user + 1
+#     R[user[line[1]], movie[line[2]]] = line[3]
+#     end = time.time()
+#     i = i +1
+#     if i % 100000 ==0:
+#         print ("i =  %d" % i )
+# np.save("ml-20m.npy",R)
+R = np.load("ml-20m.npy")
 endall = time.time()
-print (endall - beginall)/60
+# print (endall - beginall)/60
 U, V_WNMF = WNMFclass.WNMF(R, k=20, lamda=0)
 y_pred , cluster_centers_ = Kmeans(V_WNMF.T,10)
 

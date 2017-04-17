@@ -1,22 +1,37 @@
 import numpy  as np
-import HSRautotest
-m = np.array([100,200,300,400,500])
-n = np.array([200,400,600,800,1000])
-lamda = np.array([8])
-testrmse = np.eye(5,1)
-trainrmse = np.eye(5,1)
+import HSRx2main
 
-for i in range(len(m)):
-    for j in range(len(n)):
+gama = np.array([10])
+beta = np.array([10])
+lamda = np.array([0.01, 1, 10, 100])
+lamda_wnmf = np.array([0.01, 1, 10, 100])
+cishu = 10
+testrmse = np.eye(cishu, 1)
+trainrmse = np.eye(cishu, 1)
+
+for i in range(len(gama)):
+    for j in range(len(beta)):
         for k in range(len(lamda)):
-            av = 0
-            fo = open("result.txt", "a")
-            for q in range(10):
-                trainrmse[q],testrmse[q] = HSRautotest.HSR(lamda=lamda[k],m1= m[i],n1 = n[j],n_epochs=100)
-                av = av + testrmse[q]
+            for w in range(len(lamda_wnmf)):
+                av_trainrmse = 0
+                av_testrmse = 0
+                fo = open("result.txt", "a")
+                for q in range(cishu):
+                    trainrmse[q], testrmse[q] = HSRx2main.test(gama=gama[i], beta=beta[j], type='linear', lamda=lamda[k],
+                                                               lamda_wnmf=lamda_wnmf[w])
+                    av_testrmse = av_testrmse + testrmse[q]
+                    av_trainrmse = av_trainrmse + trainrmse[q]
 
-            av = av/10
+                av_testrmse = av_testrmse / cishu
+                av_trainrmse = av_trainrmse / cishu
 
-            str1 = " m1 " + str(m[i]) + " n1 " + str(n[j]) + "lamda " + str(lamda[k])  + " the avg of testrmse is "+ str(av) +"\n"
-            fo.write(str1);
-            fo.close()
+                str1 = " gama " + str(gama[i]) + " beta " + str(beta[j]) + " lamda " + str(
+                    lamda[k]) + " lamda_wnmf " + str(lamda_wnmf[w]) + " testrmse " + str(
+                    testrmse) + " trainrmse " + str(trainrmse) + "\n"
+                fo.write(str1);
+
+                str2 = " gama " + str(gama[i]) + " beta " + str(beta[j]) + " lamda " + str(
+                    lamda[k]) + " lamda_wnmf " + str(lamda_wnmf[w]) + " testrmse " + str(
+                    av_testrmse) + " trainrmse " + str(av_trainrmse) + "\n"
+                fo.write(str2);
+                fo.close()

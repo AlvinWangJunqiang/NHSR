@@ -16,8 +16,6 @@ import random
 
 
 import WNMFclass
-import NMFclass
-import ALS_WR
 import HSRx2main
 
 def nearest(cluster_centers_,X,n):
@@ -170,9 +168,6 @@ def ShowSampleArrtibute(feamethod,socre,pair, n_cluster):
         cluster_centers_ = socre[method_type].centers[i]
         ShowNearest(fea, cluster_centers_, n, i, method_type)
 
-
-
-
 def get_fea(methodtype):
     feamethod = {}
     U_WNMF, V = WNMFclass.WNMF(R, k=20, lamda=0)
@@ -226,7 +221,7 @@ pair = {attribute[i] : methodtype[best[i]] for i in range(len(attribute)) }
 
 ShowSampleArrtibute(feamethod,socre,pair, n_cluster)
 
-A = 1
+
 
 
 

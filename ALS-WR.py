@@ -1,13 +1,15 @@
 import numpy as np
 import pandas as pd
-header = ['user_id', 'item_id', 'rating', 'timestamp']
-df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
+# header = ['user_id', 'item_id', 'rating', 'timestamp']
+# df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
+header = [ 'item_id','movie_name','user_id','user_name' ,'rating', 'tag']
+df = pd.read_csv('./Douban/Bigcommentprocess.csv', sep=',', names=header)
 n_users = df.user_id.unique().shape[0]
 n_items = df.item_id.unique().shape[0]
 print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
 
 from sklearn import cross_validation as cv
-train_data, test_data = cv.train_test_split(df,test_size=0.6)
+train_data, test_data = cv.train_test_split(df,test_size=0.4)
 
 train_data = pd.DataFrame(train_data)
 test_data = pd.DataFrame(test_data)
@@ -15,11 +17,11 @@ test_data = pd.DataFrame(test_data)
 # Create training and test matrix
 R = np.zeros((n_users, n_items))
 for line in train_data.itertuples():
-    R[line[1]-1, line[2]-1] = line[3]
+    R[line[3]-1, line[1]-1] = line[5]/10
 
 T = np.zeros((n_users, n_items))
 for line in test_data.itertuples():
-    T[line[1]-1, line[2]-1] = line[3]
+    T[line[3]-1, line[1]-1] = line[5]/10
 
 # Index matrix for training data
 I = R.copy()
