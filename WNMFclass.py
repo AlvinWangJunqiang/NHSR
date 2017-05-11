@@ -58,4 +58,8 @@ class wnmf(af.activationFunction):
 
 
 
-
+if __name__ == '__main__':
+    R = np.array([[4,0,4,0],[0,1,0,3],[5,0,0,1],[0,1,2,0]])
+    P , Q = WNMF(R,k = 2,lamda=0)
+    print P , Q
+    print np.dot(P,Q)

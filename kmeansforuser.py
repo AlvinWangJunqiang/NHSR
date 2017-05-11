@@ -247,6 +247,23 @@ def bestmethodforattributr(methodtype, feamethod):
     best = np.argmax(data, axis=0)
     return best, socre
 
+def ShowSample(Fea,cluster,sampleNumber,method_type):
+    '''
+    不考虑NMI分数，也不考虑属性，直接对每个分解得到的因子进行分解
+    :param feamethod: 方法提取出的特征
+    :param cluster: 要聚成多少类别
+    :param sampleNumber: 每类别抽出多少个最近邻的
+    :return:
+    '''
+    gnd, cluster_centers_ = Kmeans(Fea, cluster)
+    order = nearest(cluster_centers_, Fea, sampleNumber)
+    print("----------------------------------------------------------------------------------------------------------")
+    for i in range(cluster):
+        #所有符合第i+1类标准的
+        print("The  %d cluster Method is %s " % (i + 1,method_type ))
+        content = df._values[order[i],:]
+        print content
+        print("----------------------------------------------------------------------------------------------------------")
 
 socre = {}
 sampleNumber = 5
@@ -259,11 +276,14 @@ R = load_ratings()
 # methodtype = ['WNMF','HSR1','HSR2_1','HSR2_2']
 methodtype = ['HSR2_1','HSR2_2']
 feamethod = get_fea(methodtype)
-attribute = ['age', 'gen', 'occ', 'zip']
-best,socre = bestmethodforattributr(methodtype,feamethod)
-pair = {attribute[i] : methodtype[best[i]] for i in range(len(attribute)) }
 
-ShowSampleArrtibute(feamethod,socre,pair, n_cluster)
+# attribute = ['age', 'gen', 'occ', 'zip']
+# best,socre = bestmethodforattributr(methodtype,feamethod)
+# pair = {attribute[i] : methodtype[best[i]] for i in range(len(attribute)) }
+# ShowSampleArrtibute(feamethod,socre,pair, n_cluster)
+
+ShowSample(Fea = feamethod['HSR2_1'],sampleNumber=5,cluster=5,method_type='HSR2_1')
+ShowSample(Fea = feamethod['HSR2_2'],sampleNumber=5,cluster=5,method_type='HSR2_2')
 
 
 

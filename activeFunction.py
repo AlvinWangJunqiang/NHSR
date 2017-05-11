@@ -15,6 +15,12 @@ def tanh(x):
 def dtanh(x):
     return 1 - tanh(x)**2
 
+def square(x):
+    return x * x
+
+def dsquare(x):
+    return 2 * x
+
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
@@ -37,6 +43,8 @@ class activationFunction:
             return self.beta * tanh(self.gama*x)
         if self.type == 'sigmoid':
             return self.beta * sigmoid(self.gama*x)
+        if self.type == 'square':
+            return self.beta * square(self.gama*x)
 
     def derivative(self, x):
         if self.type == 'linear':
@@ -45,6 +53,8 @@ class activationFunction:
             return self.beta * self.gama * dtanh(self.gama*x)
         if self.type == 'sigmoid':
             return self.beta * self.gama * dsigmoid(self.gama*x)
+        if self.type == 'square':
+            return self.beta * self.gama * dsquare(self.gama*x)
 
 
 

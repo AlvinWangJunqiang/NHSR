@@ -1,27 +1,53 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
-# header = ['user_id', 'item_id', 'rating', 'timestamp']
-# df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
-header = [ 'item_id','movie_name','user_id','user_name' ,'rating', 'tag']
-df = pd.read_csv('./Douban/Bigcommentprocess.csv', sep=',', names=header)
-n_users = df.user_id.unique().shape[0]
-n_items = df.item_id.unique().shape[0]
-print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
-
 from sklearn import cross_validation as cv
-train_data, test_data = cv.train_test_split(df,test_size=0.4)
 
-train_data = pd.DataFrame(train_data)
-test_data = pd.DataFrame(test_data)
+usingData = "movielens"
+if usingData == "douban":
+    header = ['movie_id', 'movie_name', 'user_id', 'user_name', 'rating', 'tag']
+    df = pd.read_csv('./Douban/Bigcommentprocess.csv', sep=',', names=header)
+    n_users = df.user_id.unique().shape[0]
+    n_items = df.movie_id.unique().shape[0]
+    print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
+    train_data, test_data = cv.train_test_split(df, test_size=0.6)
+    train_data = pd.DataFrame(train_data)
+    test_data = pd.DataFrame(test_data)
+    # 使用豆瓣数据集
+    # Create training and test matrix
+    R = np.zeros((n_users, n_items))
+    for line in train_data.itertuples():
+        R[line[3] - 1, line[1] - 1] = line[5] / 10
+    T = np.zeros((n_users, n_items))
+    for line in test_data.itertuples():
+        T[line[3] - 1, line[1] - 1] = line[5] / 10
+    # lmbda = 0.1  # Regularisation weight
+    lmbda = 0.01  # Regularisation weight
+    k = 50  # Dimensionality of latent feature space
 
-# Create training and test matrix
-R = np.zeros((n_users, n_items))
-for line in train_data.itertuples():
-    R[line[3]-1, line[1]-1] = line[5]/10
+if usingData == "movielens":
+    header = ['user_id', 'item_id', 'rating', 'timestamp']
+    df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
+    n_users = df.user_id.unique().shape[0]
+    n_items = df.item_id.unique().shape[0]
+    print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
 
-T = np.zeros((n_users, n_items))
-for line in test_data.itertuples():
-    T[line[3]-1, line[1]-1] = line[5]/10
+    train_data, test_data = cv.train_test_split(df, test_size=0.4)
+    train_data = pd.DataFrame(train_data)
+    test_data = pd.DataFrame(test_data)
+
+    # Create training and test matrix
+    R = np.zeros((n_users, n_items))
+    for line in train_data.itertuples():
+        R[line[1] - 1, line[2] - 1] = line[3]
+
+    T = np.zeros((n_users, n_items))
+    for line in test_data.itertuples():
+        T[line[1] - 1, line[2] - 1] = line[3]
+    lmbda = 0.00001  # Regularisation weight
+    # lmbda = 0.1  # Regularisation weight
+    k = 20  # Dimensionality of latent feature space
+
 
 # Index matrix for training data
 I = R.copy()
@@ -37,8 +63,7 @@ I2[I2 == 0] = 0
 def rmse(I,R,Q,P):
     return np.sqrt(np.sum((I * (R - np.dot(P.T,Q)))**2)/len(R[R > 0]))
 
-lmbda = 0.1 # Regularisation weight
-k = 20 # Dimensionality of latent feature space
+
 m, n = R.shape # Number of users and items
 n_epochs = 15 # Number of epochs
 

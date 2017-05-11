@@ -2,11 +2,12 @@
 import numpy  as np
 import pandas as pd
 from sklearn import cross_validation as cv
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import copy
 import time
+import csv
 
 import activeFunction as af
 import NMFclass
@@ -30,45 +31,43 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
         NMFclass.nmf.__init__(self, beta=beta, gama=gama, type=type, n_epochs_nmf=n_epochs_nmf)
         WNMFclass.wnmf.__init__(self, n_epochs_wnmf=n_epochs_wnmf,lamda_wnmf=lamda_wnmf)
 
-    def Loaddata(self,test_size=0.4):
+    def Loaddata(self,usingData = "movielens",test_size=0.4):
         #使用豆瓣数据集
-        header = ['movie_id', 'movie_name','user_id','user_name', 'rating', 'tag']
-        df = pd.read_csv('./Douban/Bigcommentprocess.csv', sep=',', names=header)
-        n_users = df.user_id.unique().shape[0]
-        n_items = df.movie_id.unique().shape[0]
+        if usingData == "douban":
+            header = ['movie_id', 'movie_name','user_id','user_name', 'rating', 'tag']
+            df = pd.read_csv('./Douban/Bigcommentprocess.csv', sep=',', names=header)
+            n_users = df.user_id.unique().shape[0]
+            n_items = df.movie_id.unique().shape[0]
+            print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
+            train_data, test_data = cv.train_test_split(df, test_size=test_size)
+            train_data = pd.DataFrame(train_data)
+            test_data = pd.DataFrame(test_data)
+            # 使用豆瓣数据集
+            # Create training and test matrix
+            self.X = np.zeros((n_users, n_items))
+            for line in train_data.itertuples():
+                self.X[line[3] - 1, line[1] - 1] = line[5] / 10
+            self.T = np.zeros((n_users, n_items))
+            for line in test_data.itertuples():
+                self.T[line[3] - 1, line[1] - 1] = line[5] / 10
 
-        #使用movielens数据集
-        # header = ['user_id', 'item_id', 'rating', 'timestamp']
-        # df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
-        # n_users = df.user_id.unique().shape[0]
-        # n_items = df.item_id.unique().shape[0]
-        print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
+        if usingData == "movielens":
+            header = ['user_id', 'item_id', 'rating', 'timestamp']
+            df = pd.read_csv('./ml-100k/ml-100k/u.data', sep='\t', names=header)
+            n_users = df.user_id.unique().shape[0]
+            n_items = df.item_id.unique().shape[0]
+            print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
+            train_data, test_data = cv.train_test_split(df, test_size=test_size)
+            train_data = pd.DataFrame(train_data)
+            test_data = pd.DataFrame(test_data)
+            # Create training and test matrix
+            self.X = np.zeros((n_users, n_items))
+            for line in train_data.itertuples():
+                self.X[line[1] - 1, line[2] - 1] = line[3]
 
-        train_data, test_data = cv.train_test_split(df, test_size=test_size)
-        train_data = pd.DataFrame(train_data)
-        test_data = pd.DataFrame(test_data)
-
-        # 使用moviel_lens数据集
-        # # Create training and test matrix
-        # self.X = np.zeros((n_users, n_items))
-        # for line in train_data.itertuples():
-        #     self.X[line[1] - 1, line[2] - 1] = line[3]
-        #
-        # self.T = np.zeros((n_users, n_items))
-        # for line in test_data.itertuples():
-        #     self.T[line[1] - 1, line[2] - 1] = line[3]
-
-        # 使用豆瓣数据集
-        # Create training and test matrix
-        self.X = np.zeros((n_users, n_items))
-        for line in train_data.itertuples():
-            self.X[line[3] - 1, line[1] - 1] = line[5]/10
-        self.T = np.zeros((n_users, n_items))
-        for line in test_data.itertuples():
-            self.T[line[3] - 1, line[1] - 1] = line[5]/10
-        #normalization
-        # self.X = (self.X - self.X.min())/(self.X.max() - self.X.min())
-        # self.T = (self.T - self.T.min()) / (self.T.max() - self.T.min())
+            self.T = np.zeros((n_users, n_items))
+            for line in test_data.itertuples():
+                self.T[line[1] - 1, line[2] - 1] = line[3]
 
         # Index matrix for training data
         self.I = self.X.copy()
@@ -115,8 +114,8 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
 
         # initialize U and U_
         for i in myrange(1, self.q, 1):
-            self.V[i] = 3 * np.random.rand(self.N[i], self.N[i - 1]) / np.sqrt(self.N[i] * self.N[i - 1]) + 10 ** -9
-            self.V_[i] = 3 * np.random.rand(self.d, self.N[i - 1]) / np.sqrt(self.d * self.N[i - 1]) + 10 ** -9
+            self.V[i] = np.random.rand(self.N[i], self.N[i - 1]) / np.sqrt(self.N[i] * self.N[i - 1]) + 10 ** -9
+            self.V_[i] = np.random.rand(self.d, self.N[i - 1]) / np.sqrt(self.d * self.N[i - 1]) + 10 ** -9
 
         # #WNMF
         self.U_[1], self.V_[1] = self.WNMF(self.X, self.d)
@@ -210,25 +209,40 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
 
     def Factorization(self):
         # factorization
+        self.log = []
         self.ferr = np.zeros(self.n_epochs)
+        self.terr = np.zeros(self.n_epochs)
         self.train_errors = []
         self.test_errors = []
-        self.steprecoder = []
+        self.steprecoderforU1 = []
+        self.steprecoderforU2 = []
+        self.steprecoderforV1 = []
+        self.steprecoderforV2 = []
         for epoch in xrange(self.n_epochs):
-            step = 0
+            stepU1 = 0
+            stepU2 = 0
+            stepV1 = 0
+            stepV2 = 0
             # updata Vj
             for j in myrange(1, self.q, 1):
                 self.Forward_propagation_V()
                 self.Back_Propagation_V(j)
                 self.V[j] = self.V[j] * ((self.mol_V[j] / self.den_V[j]) ** self.alpha)
-                step = step + (((self.mol_V[j] / self.den_V[j]) ** self.alpha).mean())
+                if j== 1:
+                    stepV1 = stepV1 + (((self.mol_V[j] / self.den_V[j]) ** self.alpha).mean())
+                if j == 2:
+                    stepV2 = stepV2 + (((self.mol_V[j] / self.den_V[j]) ** self.alpha).mean())
 
             # updata Ui
             for i in myrange(self.p, 1, -1):
                 self.Forward_propagation_U()
                 self.Back_Propagation_U(i)
                 self.U[i] = self.U[i] * ((self.mol_U[i] / self.den_U[i]) ** self.alpha)
-                step = step + ((self.mol_U[i] / self.den_U[i]) ** self.alpha).mean()
+                if i== 1:
+                    stepU1 = stepU1 + (((self.mol_U[i] / self.den_U[i]) ** self.alpha).mean())
+                if i == 2:
+                    stepU2 = stepU2 + (((self.mol_U[i] / self.den_U[i]) ** self.alpha).mean())
+
 
             # convergence
             train_rmse = rmse(self.I, self.X, self.U_[1], self.V_[1])
@@ -236,16 +250,24 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
             self.train_errors.append(train_rmse)
             self.test_errors.append(test_rmse)
             self.ferr[epoch] = train_rmse
-            self.steprecoder.append(step / (self.p * self.q))
-            if epoch == 110:
-                pass
+            self.terr[epoch] = test_rmse
+
+            self.steprecoderforU1.append(stepU1)
+            self.steprecoderforU2.append(stepU2)
+            self.steprecoderforV2.append(stepV2)
+            self.steprecoderforV1.append(stepV1)
+
             print epoch, "in HSR (",self.name,") test_rmse:", test_rmse, "train_rmse: ", train_rmse
+            self.log.append(str(epoch) + self.name + " test_rmse: " + str(test_rmse) + " train_rmse: "+ str(train_rmse))
             if epoch > 1:
-                derr = np.abs(self.ferr[epoch] - self.ferr[epoch - 1])
-                if derr < np.finfo(float).eps:
+                dferr = - self.ferr[epoch] + self.ferr[epoch - 1]
+                dterr = - self.terr[epoch] + self.terr[epoch - 1]
+                if dferr < np.finfo(float).eps :
+                # if dferr < np.finfo(float).eps or dterr < np.finfo(float).eps:
                     break
 
-    def Monitor(self,save=True, show=True):
+    def Monitor(self,save=False, show=True, savelog =True):
+
         plt.figure(1)
         plt.plot(range(len(self.train_errors)), self.train_errors, marker='o', label='Training Data');
         plt.plot(range(len(self.test_errors)), self.test_errors, marker='v', label='Test Data');
@@ -254,11 +276,22 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
         plt.text(len(self.train_errors) - 1, self.test_errors[-1], str(self.test_errors[-1]), horizontalalignment='center',
                  verticalalignment='top')
 
-        plt.title(self.name)
+        # plt.title(self.name)
         plt.xlabel('Number of Epochs');
         plt.ylabel('RMSE');
         plt.legend()
         plt.grid()
+
+
+        plt.figure(2)
+        plt.plot(range(len(self.steprecoderforU1)), self.steprecoderforU1, marker='o', label='U_{1}\'s Renewal factor');
+        plt.plot(range(len(self.steprecoderforU2)), self.steprecoderforU2, marker='o', label='U_{2}\'s Renewal factor');
+        plt.plot(range(len(self.steprecoderforV2)), self.steprecoderforV2, marker='o', label='V_{2}\'s Renewal factor');
+        plt.plot(range(len(self.steprecoderforV1)), self.steprecoderforV1, marker='o', label='V_{1}\'s Renewal factor');
+        plt.xlabel('Number of Epochs');
+        plt.ylabel('The value of Renewal factor');
+        plt.legend()
+
 
         if save is True:
             figurename = self.name
@@ -266,6 +299,12 @@ class HSR(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
             plt.close()
         if show is True:
             plt.show()
+        if savelog is True:
+            with open("log.csv", 'ab+') as csvfile:
+                writer = csv.writer(csvfile,delimiter='\n')
+                # for singlecomment in self.log:
+                writer.writerow(self.log)
+            csvfile.close()
         return self.train_errors[-1], self.test_errors[-1]
 
 
@@ -283,7 +322,7 @@ class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
         n_items = df.item_id.unique().shape[0]
         print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
 
-        train_data, test_data = cv.train_test_split(df, test_size=0)
+        train_data, test_data = cv.train_test_split(df, test_size=0.4)
         train_data = pd.DataFrame(train_data)
 
         # Create training and test matrix
@@ -427,6 +466,7 @@ class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
 
     def Factorization(self):
         # factorization
+        self.log = []
         self.ferr = np.zeros(self.n_epochs)
         self.train_errors = []
         self.steprecoder = []
@@ -453,15 +493,13 @@ class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
             self.train_errors.append(train_rmse)
             self.ferr[epoch] = train_rmse
             self.steprecoder.append(step / (self.p * self.q))
-            if epoch == 110:
-                pass
             print epoch, "in HSR (",self.name,")" , "train_rmse: ", train_rmse
             if epoch > 1:
-                derr = np.abs(self.ferr[epoch] - self.ferr[epoch - 1])
+                derr = -(self.ferr[epoch] - self.ferr[epoch - 1])
                 if derr < np.finfo(float).eps:
                     break
 
-    def Monitor(self,save=True, show=True):
+    def Monitor(self,save=False, show=False ,savelog = True):
         plt.figure(1)
         plt.plot(range(len(self.train_errors)), self.train_errors, marker='o', label='Training Data');
         plt.text(len(self.train_errors) - 1, self.train_errors[-1], str(self.train_errors[-1]), horizontalalignment='center',
@@ -479,7 +517,7 @@ class HSRtest(WNMFclass.wnmf, NMFclass.nmf, af.activationFunction):
             plt.close()
         if show is True:
             plt.show()
-        return self.train_errors[-1]
+
 
     # plt.figure(2)
     # plt.plot(range(len(self.steprecoder)), self.steprecoder, marker='o', label='Training Data');
@@ -507,8 +545,8 @@ def main(M, N, n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf = 8, gama=1, beta
     train_error, test_error = mf.Monitor()
     return train_error, test_error
 
-def test(M=[20, 100 ,50], N=[20, 1000,500], lamda=8, n_epochs=120, alpha=0.5, gama=1, beta=1, type='sigmoid'):
-    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=gama, beta=beta, type=type)
+def test(M=[20, 100 ,50], N=[20, 1000,500], lamda=8, lamda_wnmf = 8,n_epochs=120, alpha=0.5, gama=1, beta=1, type='linear'):
+    mf = HSR(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=lamda_wnmf, gama=gama, beta=beta, type=type)
     mf.Loaddata()
     mf.Setparamets(M=M, N=N, lamda=lamda, n_epochs=n_epochs, alpha=alpha)
     start_Real1 = time.time()
@@ -525,13 +563,15 @@ def test(M=[20, 100 ,50], N=[20, 1000,500], lamda=8, n_epochs=120, alpha=0.5, ga
 if __name__ == '__main__':
     # movielens数据集调整参数
     # 线性最好的 0.933818567767
-    # main(n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear', n_epochs=100, lamda=10)
+    main(M=[50,100], N=[50,2000],n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear', n_epochs=100, lamda=10)
     # 非线性最好的 0.924
     # main(M=[20, 100 ], N=[20, 1000],n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=18, gama=1, beta=10, type='tanh', n_epochs=100, lamda=15 ,alpha = 0.5)
     #基础版的效果示意
-    # main(M=[20,100], N=[20,1000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear',
-    # n_epochs=100, lamda=8, alpha=0.5)
+    # main(M=[50,100], N=[50,2000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=0.01, gama=1, beta=10, type='tanh',
+    #     n_epochs=150, lamda=0, alpha=0.5)
 
     # 豆瓣数据集调整参数
-    main(M=[20, 1000], N=[20, 1000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=8, gama=1, beta=1, type='linear',
-         n_epochs=100, lamda=8, alpha=0.5)
+    # main(M=[50, 100], N=[50, 2000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=4, gama=10, beta=10, type='tanh',
+    #      n_epochs=100, lamda=20, alpha=0.5)
+    # main(M=[50, 100], N=[50, 2000], n_epochs_nmf=150, n_epochs_wnmf=150, lamda_wnmf=4, gama=1, beta=10, type='tanh',
+    #      n_epochs=100, lamda=1, alpha=0.5)

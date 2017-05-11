@@ -9,7 +9,7 @@ n_users = df.user_id.unique().shape[0]
 n_items = df.item_id.unique().shape[0]
 print 'Number of users = ' + str(n_users) + ' | Number of movies = ' + str(n_items)
 
-train_data, test_data = cv.train_test_split(df, test_size=0.1)
+train_data, test_data = cv.train_test_split(df, test_size=0.6)
 train_data = pd.DataFrame(train_data)
 test_data = pd.DataFrame(test_data)
 
